@@ -5,7 +5,6 @@
 #include "Walnut/EntryPoint.h"
 
 #include "Walnut/Image.h"
-#include "Color.h"
 #include "Ray.h"
 
 using namespace Walnut;

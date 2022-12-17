@@ -9,7 +9,20 @@
 
 using namespace Walnut;
 
+bool hit_sphere(const glm::vec3& sphereOrigin, double radius, const Ray& r) {
+	glm::vec3 origin = r.origin() - sphereOrigin;
+	auto a = glm::dot(r.direction(), r.direction());
+	auto b = 2.0 * glm::dot(origin, r.direction());
+	auto c = glm::dot(origin, origin) - radius * radius;
+	auto discriminant = b * b - 4 * a * c;
+	return (discriminant > 0);
+}
+
 glm::vec3 getNormalizedRayColor(const Ray& r) {
+	glm::vec3 sphereOrigin(0.0f, 0.0f, -1.0f);
+	if (hit_sphere(sphereOrigin, 0.5f, r))
+		return glm::vec3(1.0f, 0.0f, 0.0f);
+
 	glm::vec3 unitDirection = glm::normalize(r.direction());
 	// y: [-1,1] -> [0,1]
 	float t = 0.5 * (unitDirection.y + 1.0);
@@ -26,9 +39,8 @@ class ExampleLayer : public Walnut::Layer {
 public:
 	virtual void OnUIRender() override {
 		ImGui::Begin("Config");
-		if (ImGui::Button("Render")) {
+		if (ImGui::Button("Render"))
 			Render();
-		}
 		ImGui::End();
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));

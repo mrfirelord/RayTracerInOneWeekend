@@ -47,7 +47,7 @@ public:
 		ImGui::Begin("Viewport");
 		imageWidth = ImGui::GetContentRegionAvail().x;
 		imageHeight = ImGui::GetContentRegionAvail().y;
-		aspectRatio = imageWidth / imageHeight;
+		aspectRatio = float(imageWidth) / imageHeight;
 
 		if (image)
 			ImGui::Image(image->GetDescriptorSet(), { (float)imageWidth, (float)imageHeight });

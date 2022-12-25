@@ -6,26 +6,21 @@
 
 #include "Walnut/Image.h"
 #include "Ray.h"
+#include "rtweekend.h"
+#include "HittableList.h"
+#include "Sphere.h"
 
 using namespace Walnut;
 
-bool hit_sphere(const glm::vec3& sphereOrigin, double radius, const Ray& r) {
-	glm::vec3 origin = r.origin() - sphereOrigin;
-	auto a = glm::dot(r.direction(), r.direction());
-	auto b = 2.0 * glm::dot(origin, r.direction());
-	auto c = glm::dot(origin, origin) - radius * radius;
-	auto discriminant = b * b - 4 * a * c;
-	return (discriminant > 0);
-}
-
-glm::vec3 getNormalizedRayColor(const Ray& r) {
-	glm::vec3 sphereOrigin(0.0f, 0.0f, -1.0f);
-	if (hit_sphere(sphereOrigin, 0.5f, r))
-		return glm::vec3(1.0f, 0.0f, 0.0f);
+glm::vec3 getNormalizedRayColor(const Ray& r, const Hittable& world) {
+	HitRecord rec;
+	if (world.hit(r, 0, INF, rec)) {
+		return 0.5f * (rec.normal + glm::vec3(1.0f, 1.0f, 1.0f));
+	}
 
 	glm::vec3 unitDirection = glm::normalize(r.direction());
 	// y: [-1,1] -> [0,1]
-	float t = 0.5 * (unitDirection.y + 1.0);
+	auto t = 0.5f * (unitDirection.y + 1.0f);
 	return (1.0f - t) * glm::vec3(1.0f, 1.0f, 1.0f) + t * glm::vec3(0.5f, 0.7f, 1.0f);
 }
 
@@ -69,6 +64,12 @@ public:
 		float viewportWidth = aspectRatio * viewportHeight;
 		float focalLength = 1.0;
 
+		// World
+
+		HittableList world;
+		world.add(make_shared<Sphere>(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f));
+		world.add(make_shared<Sphere>(glm::vec3(0.0f, -100.5f, -1.0f), 100.0f));
+
 		auto origin = glm::vec3(0, 0, 0);
 		glm::vec3 horizontal = glm::vec3(viewportWidth, 0.0f, 0.0f);
 		glm::vec3 vertical = glm::vec3(0.0f, viewportHeight, 0.0f);
@@ -80,12 +81,11 @@ public:
 				float v = float(verticalPixel) / (imageHeight - 1);
 
 				Ray ray(origin, lowerLeftCorner + u * horizontal + v * vertical - origin);
-				auto normalizedColor = getNormalizedRayColor(ray);
+				auto normalizedColor = getNormalizedRayColor(ray, world);
 
 				imageData[imageWidth * imageHeight - (verticalPixel * imageWidth + horizontalPixel)] = toColor(normalizedColor);
 			}
 		}
-
 
 		image->SetData(imageData);
 	}

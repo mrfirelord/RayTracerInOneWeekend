@@ -9,6 +9,7 @@
 #include "rtweekend.h"
 #include "HittableList.h"
 #include "Sphere.h"
+#include "Camera.h"
 
 using namespace Walnut;
 
@@ -25,8 +26,8 @@ glm::vec3 getNormalizedRayColor(const Ray& r, const Hittable& world) {
 }
 
 // transform [0-1, 0-1, 0-1] to 0xff[00-ff][00-ff][00-ff]
-uint32_t toColor(glm::vec3 normalizedColor) {
-	glm::vec3 color = normalizedColor * 255.999f;
+uint32_t toColor(glm::vec3 normalizedColor, int numberOfSamples) {
+	glm::vec3 color = normalizedColor / float(numberOfSamples) * 255.999f;
 	return (0xff << 24) | (((uint8_t)color.b) << 16) | (((uint8_t)color.g) << 8) | ((uint8_t)color.r);
 }
 
@@ -58,11 +59,11 @@ public:
 			imageData = new uint32_t[imageWidth * imageHeight];
 		}
 
+		const int samplesPerPixel = 10;
+
 		// Camera
 
-		float viewportHeight = 2.0;
-		float viewportWidth = aspectRatio * viewportHeight;
-		float focalLength = 1.0;
+		Camera camera(aspectRatio * 2.0, 2.0);
 
 		// World
 
@@ -70,20 +71,18 @@ public:
 		world.add(make_shared<Sphere>(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f));
 		world.add(make_shared<Sphere>(glm::vec3(0.0f, -100.5f, -1.0f), 100.0f));
 
-		auto origin = glm::vec3(0, 0, 0);
-		glm::vec3 horizontal = glm::vec3(viewportWidth, 0.0f, 0.0f);
-		glm::vec3 vertical = glm::vec3(0.0f, viewportHeight, 0.0f);
-		glm::vec3 lowerLeftCorner = origin - horizontal / 2.0f - vertical / 2.0f - glm::vec3(0.0f, 0.0f, focalLength);
-
 		for (int verticalPixel = 0; verticalPixel < imageHeight; verticalPixel++) {
 			for (int horizontalPixel = 0; horizontalPixel < imageWidth; horizontalPixel++) {
-				float u = float(horizontalPixel) / (imageWidth - 1);
-				float v = float(verticalPixel) / (imageHeight - 1);
+				glm::vec3 pixelColor(0.0f, 0.0f, 0.0f);
+				for (int s = 0; s < samplesPerPixel; s++) {
+					auto u = (horizontalPixel + randomFloat()) / (imageWidth - 1);
+					auto v = (verticalPixel + randomFloat()) / (imageHeight - 1);
+					
+					Ray r = camera.getRay(u, v);
+					pixelColor += getNormalizedRayColor(r, world);
+				}
 
-				Ray ray(origin, lowerLeftCorner + u * horizontal + v * vertical - origin);
-				auto normalizedColor = getNormalizedRayColor(ray, world);
-
-				imageData[imageWidth * imageHeight - (verticalPixel * imageWidth + horizontalPixel)] = toColor(normalizedColor);
+				imageData[imageWidth * imageHeight - (verticalPixel * imageWidth + horizontalPixel)] = toColor(pixelColor, samplesPerPixel);
 			}
 		}
 
